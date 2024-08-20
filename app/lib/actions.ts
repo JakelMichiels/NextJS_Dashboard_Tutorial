@@ -1,10 +1,34 @@
 "use server";
 
+import {signIn} from '@/auth';
+import {AuthError} from 'next-auth';
+
 import {z} from 'zod';
 import {sql} from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import {redirect} from 'next/navigation';
 
+export async function authenticate(
+  prevState: string | undefined,
+  formData:FormData,
+) {
+
+  try {
+    const email = formData.get("email");
+    const password = formData.get("password")
+    await signIn('credentials', {redirectTo:"/dashboard", redirect:true, email, password});
+  } catch(error) {
+    if (error instanceof AuthError) {
+      switch(error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid Credentials';
+        default:
+          return 'Something went Wrong.';
+      }
+    }
+    throw error;
+  }
+}
 const FormSchema = z.object({
     id: z.string(),
     customerId: z.string({
